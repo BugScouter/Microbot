@@ -131,6 +131,11 @@ public class QoLScript extends Script {
     }
 
     private void handleWorkbenchActions() {
+        if (QoLPlugin.workbenchMenuEntry == null) {
+            log.warn("workbenchMenuEntry is null, cannot execute workbench actions.");
+            QoLPlugin.executeWorkbenchActions = false;
+            return;
+        }
         // get all pouches in inventory except for the "Rune pouch"
         Rs2Inventory.all().stream()
                 .filter(item -> item.getName().contains("pouch") && !item.getName().equals("Rune pouch"))
@@ -181,7 +186,11 @@ public class QoLScript extends Script {
                 }
             }
         }
-        Microbot.doInvoke(menuEntry, Objects.requireNonNull(menuEntry.getWidget()).getBounds());
+        if (menuEntry.getWidget() == null) {
+            log.warn("Widget for menu entry is null, cannot execute bank action. {}", menuEntry.getTarget());
+            return;
+        }
+        Microbot.doInvoke(menuEntry, menuEntry.getWidget().getBounds());
         //Rs2Random.wait(200, 500);
     }
 
@@ -223,7 +232,11 @@ public class QoLScript extends Script {
 
     private void processFurnaceMenuEntry(NewMenuEntry menuEntry) {
         log.info("Executing action: {} {}", menuEntry.getOption(), menuEntry.getTarget());
-        Microbot.doInvoke(menuEntry, Objects.requireNonNull(menuEntry.getWidget()).getBounds());
+        if (menuEntry.getWidget() == null) {
+            log.warn("Widget for menu entry is null, cannot execute furnace action. {}", menuEntry.getTarget());
+            return;
+        }
+        Microbot.doInvoke(menuEntry, menuEntry.getWidget().getBounds());
         Rs2Random.wait(200, 500);
     }
 
@@ -242,7 +255,11 @@ public class QoLScript extends Script {
 
     private void processAnvilMenuEntry(NewMenuEntry menuEntry) {
         log.info("Executing action: {} {}", menuEntry.getOption(), menuEntry.getTarget());
-        Microbot.doInvoke(menuEntry, Objects.requireNonNull(menuEntry.getWidget()).getBounds());
+        if (menuEntry.getWidget() == null) {
+            log.warn("Widget for menu entry is null, cannot execute anvil action. {}", menuEntry.getTarget());
+            return;
+        }
+        Microbot.doInvoke(menuEntry, menuEntry.getWidget().getBounds());
         Rs2Random.wait(200, 500);
     }
 
