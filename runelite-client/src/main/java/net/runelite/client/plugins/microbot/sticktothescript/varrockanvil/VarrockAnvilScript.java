@@ -12,6 +12,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
+import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -29,7 +30,7 @@ enum State {
 
 public class VarrockAnvilScript extends Script {
 
-    public static String version = "1.0.2";
+    public static String version = "1.0.3";
     public State state = State.BANKING;
     public String debug = "";
     private boolean expectingXPDrop = false;
@@ -39,6 +40,12 @@ public class VarrockAnvilScript extends Script {
     private static int AnvilMakeVarbitPlayer = 2224;
     private static int AnvilContainerWidgetID = 312;
     private static boolean logout = true;
+
+    private boolean hasHammer() {
+        return Rs2Inventory.hasItem(ItemID.HAMMER) ||
+                Rs2Inventory.hasItem(ItemID.IMCANDO_HAMMER) ||
+                Rs2Equipment.isWearing(ItemID.IMCANDO_HAMMER, ItemID.IMCANDO_HAMMER_OFFHAND);
+    }
 
     public boolean run(VarrockAnvilConfig config) {
         Bars barType = config.sBarType();
@@ -170,7 +177,7 @@ public class VarrockAnvilScript extends Script {
     private void determineState(Bars barType, AnvilItem anvilItem) {
         debug("Determine state");
 
-        if (Rs2Inventory.hasItemAmount(barType.toString(), anvilItem.getRequiredBars()) && Rs2Inventory.hasItem(ItemID.HAMMER)) {
+        if (Rs2Inventory.hasItemAmount(barType.toString(), anvilItem.getRequiredBars()) && hasHammer()) {
             if (!Functions.closeToLocation(AnvilLocation)) {
                 state = State.WALK_TO_ANVIL;
                 debug("Walking to anvil");
@@ -194,21 +201,25 @@ public class VarrockAnvilScript extends Script {
         if (Rs2Bank.openBank()) {
             sleepUntil(Rs2Bank::isOpen);
             debug("Bank is open");
-            Rs2Bank.depositAllExcept(ItemID.HAMMER, barType.getId());
+            Rs2Bank.depositAllExcept(ItemID.HAMMER, barType.getId(), ItemID.IMCANDO_HAMMER);
             debug("Items deposited");
             sleep(180, 540);
 
-            if (!Rs2Inventory.hasItem(ItemID.HAMMER)) {
-                Rs2Bank.withdrawOne(ItemID.HAMMER);
-                sleepUntil(() -> Rs2Inventory.hasItem(ItemID.HAMMER), 3500);
+            if (!hasHammer()) {
+                if (Rs2Bank.hasItem(ItemID.HAMMER)) {
+                    Rs2Bank.withdrawOne(ItemID.HAMMER);
+                    sleepUntil(() -> Rs2Inventory.hasItem(ItemID.HAMMER), 3500);
+                } else if (Rs2Bank.hasItem(ItemID.IMCANDO_HAMMER)) {
+                    Rs2Bank.withdrawOne(ItemID.IMCANDO_HAMMER);
+                    sleepUntil(() -> Rs2Inventory.hasItem(ItemID.IMCANDO_HAMMER), 3500);
+                }
 
                 // Exit if we did not end up finding it.
-                if (!Rs2Inventory.hasItem(ItemID.HAMMER)) {
+                if (!hasHammer()) {
                     Rs2Bank.closeBank();
-                    stop("Could not find hammer in bank.");
+                    stop("Could not find any hammer in bank.");
                 }
                 sleep(180, 540);
-
             }
 
             if (Rs2Bank.count(barType.toString()) < 1) {
